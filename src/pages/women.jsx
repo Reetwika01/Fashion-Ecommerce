@@ -1,0 +1,161 @@
+import { Link } from "react-router-dom";
+import { useState } from "react";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import { useWishlist } from "../context/WishlistContext";
+import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
+import LoginRequiredModal from "../components/LoginRequiredModal";
+import { FaHeart } from "react-icons/fa";
+import { allProducts } from "../data/products";
+import ProductCard from "../components/ProductCard";
+const womenProducts = allProducts.filter(
+  (product) => product.category === "Women"
+);
+
+export default function Women() {
+  const { user } = useAuth();
+const [showLoginModal, setShowLoginModal] = useState(false);
+const { addToWishlist } = useWishlist();
+const { addToCart } = useCart();
+  return (
+    <div className="bg-gradient-to-r from-[#F5F0E8] via-[#E8DCC8] to-[#D4C4A0] min-h-screen">
+      <Navbar />
+
+      {/* Hero */}
+      <section
+        className="h-[70vh] bg-cover bg-center relative"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=2000')",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/50"></div>
+
+        <div className="relative z-10 h-full flex flex-col justify-center items-center text-center text-white px-6">
+          <p className="uppercase tracking-[5px]">
+            Women's Collection
+          </p>
+
+          <h1 className="text-6xl md:text-7xl font-bold mt-4">
+            Elegant & Modern
+          </h1>
+
+          <p className="mt-6 max-w-xl">
+            Discover timeless styles designed for confidence and comfort.
+          </p>
+        </div>
+      </section>
+
+      {/* Categories */}
+      <section className="max-w-7xl mx-auto py-12 px-6">
+        <div className="flex flex-wrap gap-4 justify-center">
+          {[
+            "All",
+            "Dresses",
+            "Tops",
+            "Jeans",
+            "Bags",
+            "Footwear",
+          ].map((item) => (
+            <button
+              key={item}
+               className="px-7 py-3 rounded-full bg-white/30 backdrop-blur-xl border border-white/40 
+        text-[#3D2C2E] font-medium shadow-lg transition-all duration-300 hover:bg-[#C9A66B]/80 hover:text-white 
+        hover:border-[#C9A66B] hover:shadow-[0_10px_30px_rgba(201,166,107,0.35)] hover:-translate-y-1"
+      >
+              {item}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Products */}
+<section className="max-w-7xl mx-auto px-6 py-20">
+  <div className="flex justify-between items-center mb-10">
+    <div>
+      <h2 className="text-4xl font-bold text-[#3D2C2E]">Women's Collection</h2>
+      <p className="text-gray-600 mt-2">
+        Showing {womenProducts.length} Products
+      </p>
+    </div>
+
+     <select className="px-5 py-3 rounded-xl bg-white/30 backdrop-blur-xl border border-white/40
+text-[#3D2C2E] font-medium shadow-lg outline-none cursor-pointer
+transition-all duration-300 hover:bg-white/40 hover:border-[#C9A66B] hover:shadow-[0_10px_30px_rgba(201,166,107,0.25)] focus:ring-2 focus:ring-[#C9A66B]/40 focus:border-[#C9A66B]">
+  <option>Sort by</option>
+  <option>Newest</option>
+  <option>Price: Low to High</option>
+  <option>Price: High to Low</option>
+  <option>Best Selling</option>
+</select>
+  </div>
+
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+  {womenProducts.map((product) => (
+    <ProductCard
+      key={product.id}
+      product={product}
+      user={user}
+      addToWishlist={addToWishlist}
+      addToCart={addToCart}
+      setShowLoginModal={setShowLoginModal}
+    />
+  ))}
+</div>
+</section>
+      {/* Banner */}
+      <section className="bg-black text-white py-20">
+        <div className="max-w-5xl mx-auto text-center px-6">
+          <h2 className="text-5xl font-bold">
+            New Women's Arrivals
+          </h2>
+
+          <p className="mt-4">
+            Discover fashion-forward styles and exclusive collections.
+          </p>
+
+          <button className="mt-8 bg-[#F5F0E8] text-black px-8 py-3 rounded-full font-semibold">
+            Shop Now
+          </button>
+        </div>
+      </section>
+
+      {/* Featured */}
+      <section className="py-24 bg-[#F0E6D2]">
+        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+          <img
+            src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200"
+            alt=""
+            className="rounded-3xl"
+          />
+
+          <div>
+            <p className="uppercase text-[#B8956A]">
+              Featured Collection
+            </p>
+
+            <h2 className="text-5xl font-bold mt-4 text-[#3D2C2E]">
+              Luxury Women's Fashion
+            </h2>
+
+            <p className="text-gray-600 mt-6">
+              Explore elegant dresses, premium handbags,
+              stylish footwear and modern essentials.
+            </p>
+
+            <button className="mt-8 bg-black text-white px-8 py-3 rounded-full">
+              Explore Collection
+            </button>
+          </div>
+          <LoginRequiredModal
+            isOpen={showLoginModal}
+            onClose={() => setShowLoginModal(false)}
+          />
+            </div>
+          </section>
+          
+                <Footer />
+              </div>
+            );
+          }
