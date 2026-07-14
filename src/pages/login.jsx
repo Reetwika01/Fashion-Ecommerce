@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
+import api from "../api/axios";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function Login() {
     setError("");
   };
 
-  const handleSubmit = (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.email || !form.password) {
@@ -27,30 +28,38 @@ export default function Login() {
       return;
     }
 
-    const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers")) || [];
+    try {
+  const response = await api.post("/auth/login", {
+    email: form.email,
+    password: form.password,
+  });
 
-    const matchedUser = registeredUsers.find(
-      (u) =>
-        u.email.toLowerCase() === form.email.toLowerCase() &&
-        u.password === form.password
-    );
+  const data = response.data;
+  console.log("LOGIN RESPONSE:", data);
 
-    if (!matchedUser) {
-      setError("Invalid email or password.");
-      return;
-    }
+  localStorage.setItem("accessToken", data.accessToken);
+  localStorage.setItem("refreshToken", data.refreshToken);
 
-    // Log the user in
-    login({ name: matchedUser.name, email: matchedUser.email });
+  localStorage.setItem("userId", data.userId);
+  localStorage.setItem("username", data.fullName);
+  localStorage.setItem("userEmail", data.email);
 
-    // Keep Profile.jsx in sync
-    localStorage.setItem("username", matchedUser.name);
-    localStorage.setItem("userEmail", matchedUser.email);
-    localStorage.setItem("userPhone", matchedUser.phone);
-    localStorage.setItem("userJoined", matchedUser.joined);
+  login({
+    name: data.fullName,
+    email: data.email,
+  });
 
-    navigate(from, { replace: true });
-  };
+  navigate(from, { replace: true });
+
+} catch (error) {
+
+  if (error.response) {
+    setError(error.response.data.message || "Invalid email or password.");
+  } else {
+    setError("Unable to connect to server.");
+  }
+
+}}
 
   return (
     <div className="bg-gradient-to-r from-[#F5F0E8] via-[#E8DCC8] to-[#D4C4A0] min-h-screen">

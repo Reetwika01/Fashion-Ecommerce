@@ -1,9 +1,10 @@
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { allProducts } from "../data/products";
+import { useState, useMemo, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useCart } from "../context/CartContext";
-import { allProducts } from "../data/products";
+import api from "../api/axios";
 import {
   FiMapPin,
   FiCreditCard,
@@ -16,41 +17,114 @@ import {
 } from "react-icons/fi";
 
 export default function Checkout() {
+  const [loading, setLoading] = useState(false);
+  const [order, setOrder] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { cart, clearCart } = useCart();
+const { cart, fetchCart } = useCart();
+useEffect(() => {
+
+  fetchCart();
+
+}, []);
+  const [couponCode, setCouponCode] = useState("");
+const [couponMessage, setCouponMessage] = useState("");
+const [coupons, setCoupons] = useState([]);
+const [appliedCoupon, setAppliedCoupon] = useState(null);
 
   const [step, setStep] = useState("address"); // address -> payment -> success
-  const [paymentMethod, setPaymentMethod] = useState("cod");
-
+const [paymentMethod, setPaymentMethod] = useState("COD");
   // ---- Build the list of items to checkout ----
   // Priority: multiple products passed via state (from Cart) -> single product (Buy Now) -> current cart
-  const rawItems = (() => {
-    if (location.state?.products && location.state.products.length > 0) {
-      return location.state.products;
-    }
-    if (location.state?.product) {
-      return [location.state.product];
-    }
-    return cart || [];
-  })();
+  const [items, setItems] = useState([]);
 
-  const [items, setItems] = useState(
-    rawItems.map((item) => ({
-      ...item,
-      quantity: item.quantity || 1,
-    }))
-  );
+useEffect(() => {
+  console.log("Cart:", cart);
+
+  const formattedItems = cart.map((item) => ({
+    id: item.productId || item.product?.id,
+
+    name:
+      item.productName ||
+      item.product?.productName,
+
+    price:
+      item.price ||
+      item.product?.price,
+
+    image:
+      item.productImage ||
+      item.product?.imageUrl,
+
+    quantity:
+      item.quantity || 1,
+  }));
+
+  console.log("Formatted Items:", formattedItems);
+
+  setItems(formattedItems);
+}, [cart]);
+
+  useEffect(() => {
+  const loadCoupons = async () => {
+    try {
+      const response = await api.get("/coupons");
+      setCoupons(response.data);
+    } catch (error) {
+      console.error("Failed to load coupons", error);
+    }
+  };
+
+  loadCoupons();
+}, []);
 
   const cameFromCart = !location.state?.product; // true if using cart items (multi) vs a single "Buy Now"
 
   const [address, setAddress] = useState({
-    name: "",
-    phone: "",
-    line1: "",
-    city: "",
-    pincode: "",
-  });
+  customerName: "",
+  phoneNumber: "",
+  address: "",
+});
+
+  const applyCoupon = () => {
+  if (!couponCode.trim()) {
+    setCouponMessage("Enter a coupon code.");
+    return;
+  }
+
+  const coupon = coupons.find(
+    (c) =>
+      c.couponCode.toUpperCase() ===
+      couponCode.trim().toUpperCase()
+  );
+
+ if (!coupon) {
+  setAppliedCoupon(null);
+  setCouponMessage("Invalid coupon code.");
+  return;
+}
+
+  if (!coupon.active) {
+  setAppliedCoupon(null);
+  setCouponMessage("Coupon is inactive.");
+  return;
+}
+  if (subtotal < coupon.minimumAmount) {
+  setAppliedCoupon(null);
+  setCouponMessage(
+    `${coupon.couponCode} requires minimum purchase of ₹${coupon.minimumAmount}`
+  );
+  return;
+
+}
+
+  // Don't calculate discount here.
+  // Backend will validate and calculate everything.
+
+  setCouponCode(coupon.couponCode);
+setAppliedCoupon(coupon);
+setCouponMessage("Coupon applied successfully.");
+};
 
   // ---- Add More Products modal state ----
   const [showAddModal, setShowAddModal] = useState(false);
@@ -90,12 +164,17 @@ export default function Checkout() {
     return found ? found.quantity || 1 : 0;
   };
 
-  const handleAddressChange = (e) => {
-    setAddress({ ...address, [e.target.name]: e.target.value });
-  };
+ const handleAddressChange = (e) => {
+  setAddress({
+    ...address,
+    [e.target.name]: e.target.value,
+  });
+};
 
   const isAddressValid =
-    address.name && address.phone && address.line1 && address.city && address.pincode;
+  address.customerName &&
+  address.phoneNumber &&
+  address.address;
 
   const handleRemoveItem = (id) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
@@ -119,38 +198,62 @@ export default function Checkout() {
     0
   );
   const shipping = 0;
-  const total = subtotal + shipping;
 
-  const handlePlaceOrder = () => {
-    const existingOrders = JSON.parse(localStorage.getItem("orders")) || [];
+// Find the selected coupon
+const selectedCoupon = appliedCoupon;
 
-    // Create one order entry per item, matching the shape Profile.jsx expects
-    const newOrders = items.map((item) => ({
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      item: item.name,
-      image: item.image,
-      price: item.price,
-      quantity: item.quantity || 1,
-      status: "Processing",
-      date: new Date().toLocaleDateString(),
-      address,
+// Discount amount
+// Discount amount
+const calculatedDiscount =
+  selectedCoupon &&
+  subtotal >= selectedCoupon.minimumAmount
+    ? (subtotal * selectedCoupon.discountPercentage) / 100
+    : 0;
+
+const total = subtotal - calculatedDiscount + shipping;
+  const handlePlaceOrder = async () => {
+  try {
+    setLoading(true);
+
+    const request = {
+      customerName: address.customerName,
+      address: address.address,
+      phoneNumber: address.phoneNumber,
       paymentMethod,
-    }));
+      couponCode: couponCode.trim() || null,
 
-    localStorage.setItem(
-      "orders",
-      JSON.stringify([...newOrders, ...existingOrders])
-    );
+      items: items.map((item) => ({
+        productId: item.id,
+        quantity: item.quantity || 1,
+      })),
+    };
 
-    // If these items came from the cart, clear it after placing the order
-    if (cameFromCart && clearCart) {
-      clearCart();
-    }
+    console.log("Checkout Request");
+    console.log(request);
+
+    const response = await api.post("/checkout", request);
+
+    console.log("Checkout Response");
+    console.log(response.data);
+
+    setOrder(response.data);
 
     setStep("success");
-  };
+    await fetchCart();
+  } catch (error) {
+    console.error(error.response?.data || error);
 
-  if (items.length === 0 && !showAddModal) {
+    alert(
+      error.response?.data?.message ||
+      error.response?.data ||
+      "Checkout failed."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+ if (items.length === 0 && step !== "success" && !showAddModal) {
     return (
       <>
         <Navbar />
@@ -232,40 +335,26 @@ export default function Checkout() {
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <input
-                      name="name"
-                      value={address.name}
-                      onChange={handleAddressChange}
-                      placeholder="Full Name"
-                      className="border border-[#E0D4BC] bg-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#C9A66B]/40"
-                    />
+  name="customerName"
+  value={address.customerName}
+  onChange={handleAddressChange}
+  placeholder="Full Name"
+  className="border border-[#E0D4BC] bg-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#C9A66B]/40"
+/>
                     <input
-                      name="phone"
-                      value={address.phone}
-                      onChange={handleAddressChange}
-                      placeholder="Phone Number"
-                      className="border border-[#E0D4BC] bg-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#C9A66B]/40"
-                    />
+  name="phoneNumber"
+  value={address.phoneNumber}
+  onChange={handleAddressChange}
+  placeholder="Phone Number"
+  className="border border-[#E0D4BC] bg-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#C9A66B]/40"
+/>
                     <input
-                      name="line1"
-                      value={address.line1}
-                      onChange={handleAddressChange}
-                      placeholder="Address Line"
-                      className="border border-[#E0D4BC] bg-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#C9A66B]/40 md:col-span-2"
-                    />
-                    <input
-                      name="city"
-                      value={address.city}
-                      onChange={handleAddressChange}
-                      placeholder="City"
-                      className="border border-[#E0D4BC] bg-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#C9A66B]/40"
-                    />
-                    <input
-                      name="pincode"
-                      value={address.pincode}
-                      onChange={handleAddressChange}
-                      placeholder="Pincode"
-                      className="border border-[#E0D4BC] bg-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#C9A66B]/40"
-                    />
+  name="address"
+  value={address.address}
+  onChange={handleAddressChange}
+  placeholder="Complete Address"
+  className="border border-[#E0D4BC] bg-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#C9A66B]/40 md:col-span-2"
+/>
                   </div>
 
                   <button
@@ -290,9 +379,16 @@ export default function Checkout() {
 
                   <div className="space-y-4">
                     {[
-                      { key: "cod", label: "Cash on Delivery", desc: "Pay when your order arrives" },
-                      { key: "upi", label: "UPI", desc: "Pay via any UPI app" },
-                      { key: "card", label: "Credit / Debit Card", desc: "Visa, Mastercard, Amex accepted" },
+                      
+                      { key: "COD",
+  label: "Cash on Delivery",
+  desc: "Pay when your order arrives", },
+                      { key: "UPI",
+  label: "UPI",
+  desc: "Pay using any UPI app", },
+                      { key: "CARD",
+  label: "Credit / Debit Card",
+  desc: "Visa, Mastercard accepted", },
                     ].map((method) => (
                       <label
                         key={method.key}
@@ -325,47 +421,84 @@ export default function Checkout() {
                       Back
                     </button>
                     <button
-                      onClick={handlePlaceOrder}
-                      className="flex-1 bg-[#3D2C2E] text-white px-8 py-3.5 rounded-full font-semibold hover:bg-[#C9A66B] transition"
-                    >
-                      Place Order
-                    </button>
+  onClick={handlePlaceOrder}
+  disabled={loading}
+  className="flex-1 bg-[#3D2C2E] text-white px-8 py-3.5 rounded-full font-semibold hover:bg-[#C9A66B] transition disabled:opacity-50"
+>
+  {loading ? "Placing Order..." : "Place Order"}
+</button>
                   </div>
                 </div>
               )}
 
               {step === "success" && (
-                <div className="bg-[#FDFBF7] rounded-3xl p-12 shadow-md border border-[#F0E6D2] text-center">
-                  <FiCheckCircle className="mx-auto text-6xl text-[#C9A66B] mb-6" />
-                  <h2 className="text-3xl font-bold text-[#3D2C2E]">Order Placed!</h2>
-                  <p className="text-gray-500 mt-3">
-                    Thank you, {address.name}. Your order for{" "}
-                    {items.length === 1
-                      ? items[0].name
-                      : `${items.length} items`}{" "}
-                    has been confirmed.
-                  </p>
-                  <p className="text-[#B8956A] font-semibold mt-2">
-                    Estimated delivery: 4-6 business days
-                  </p>
+  <div className="bg-[#FDFBF7] rounded-3xl p-12 shadow-md border border-[#F0E6D2] text-center">
 
-                  <div className="flex gap-4 justify-center mt-8">
-                    <Link
-                      to="/"
-                      className="bg-[#3D2C2E] text-white px-8 py-3.5 rounded-full font-semibold hover:bg-[#C9A66B] transition"
-                    >
-                      Continue Shopping
-                    </Link>
-                    <Link
-                      to="/profile"
-                      className="border border-[#C9A66B] text-[#3D2C2E] px-8 py-3.5 rounded-full font-semibold hover:bg-[#C9A66B] hover:text-white transition"
-                    >
-                      View Orders
-                    </Link>
-                  </div>
-                </div>
-              )}
+    <FiCheckCircle className="mx-auto text-6xl text-[#C9A66B] mb-6" />
 
+    <h2 className="text-3xl font-bold text-[#3D2C2E]">
+      Order Placed Successfully!
+    </h2>
+
+    <p className="text-gray-500 mt-3">
+      Thank you, {order?.customerName}. Your order has been placed successfully.
+    </p>
+
+
+    <div className="mt-6 space-y-2 bg-[#F8F6F2] rounded-xl p-5 border border-[#E0D4BC]">
+
+      <div>
+        <strong>Order Number:</strong> {order?.orderNumber}
+      </div>
+
+      <div>
+        <strong>Payment:</strong> {order?.paymentStatus}
+      </div>
+
+      <div>
+        <strong>Status:</strong> {order?.orderStatus}
+      </div>
+
+      <div>
+        <strong>Total:</strong> ₹{order?.finalAmount}
+      </div>
+
+    </div>
+
+
+    <p className="mt-6">
+      {items.length === 1
+        ? items[0].name
+        : `${items.length} items`}{" "}
+      has been confirmed.
+    </p>
+
+
+    <p className="text-[#B8956A] font-semibold mt-2">
+      Estimated delivery: 4-6 business days
+    </p>
+
+
+    <div className="flex gap-4 justify-center mt-8">
+
+      <Link
+        to="/"
+        className="bg-[#3D2C2E] text-white px-8 py-3.5 rounded-full font-semibold hover:bg-[#C9A66B] transition"
+      >
+        Continue Shopping
+      </Link>
+
+      <Link
+        to="/profile"
+        className="border border-[#C9A66B] text-[#3D2C2E] px-8 py-3.5 rounded-full font-semibold hover:bg-[#C9A66B] hover:text-white transition"
+      >
+        View Orders
+      </Link>
+
+    </div>
+
+  </div>
+)}
             </div>
 
             {/* Right: Order Summary */}
@@ -390,14 +523,18 @@ export default function Checkout() {
                   {items.map((item) => (
                     <div key={item.id} className="flex gap-4">
                       <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-20 h-20 object-cover rounded-xl"
-                      />
+  src={
+    item.image?.startsWith("http")
+      ? item.image
+      : `http://localhost:8080${item.image}`
+  }
+  alt={item.name}
+  className="w-20 h-20 object-cover rounded-xl"
+/>
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
                           <p className="font-semibold text-[#3D2C2E] pr-2">{item.name}</p>
-                          {step === "address" && items.length > 1 && (
+                          {step === "address" && (
                             <button
                               onClick={() => handleRemoveItem(item.id)}
                               className="text-[#8B6F63] hover:text-red-500 transition shrink-0"
@@ -442,21 +579,104 @@ export default function Checkout() {
                   ))}
                 </div>
 
-                <div className="border-t border-[#F0E6D2] mt-6 pt-6 space-y-3">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Subtotal</span>
-                    <span>₹{subtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span className="flex items-center gap-1"><FiTruck size={14} /> Shipping</span>
-                    <span className="text-[#B8956A] font-semibold">Free</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold text-[#3D2C2E] pt-3 border-t border-[#F0E6D2]">
-                    <span>Total</span>
-                    <span>₹{total.toLocaleString()}</span>
-                  </div>
-                </div>
+                {/* Coupon Section */}
+<div className="mt-6 border-t border-[#F0E6D2] pt-5">
+  
+  <p className="font-semibold text-[#3D2C2E] mb-3">
+    Apply Coupon
+  </p>
+  <div className="mb-4">
+  <p className="font-semibold text-[#3D2C2E] mb-2">
+    Available Coupons
+  </p>
+
+  <div className="flex flex-wrap gap-2">
+  {coupons.map((coupon) => (
+    <button
+      key={coupon.couponCode}
+      type="button"
+      onClick={() => {
+        if (subtotal < coupon.minimumAmount) {
+          setCouponMessage(
+            `${coupon.couponCode} requires minimum purchase of ₹${coupon.minimumAmount}`
+          );
+          setCouponCode("");
+          setAppliedCoupon(null);
+          return;
+        }
+
+        setCouponCode(coupon.couponCode);
+        setCouponMessage(
+          `${coupon.couponCode} selected. Click Apply to use it.`
+        );
+      }}
+      className="px-3 py-2 rounded-lg border border-[#C9A66B] text-[#3D2C2E] hover:bg-[#C9A66B] hover:text-white transition"
+    >
+      {coupon.couponCode}
+    </button>
+  ))}
+</div>
+</div>
+
+  <div className="flex gap-2">
+    <input
+      type="text"
+      placeholder="Enter coupon"
+      value={couponCode}
+      onChange={(e) => setCouponCode(e.target.value)}
+      className="flex-1 border border-[#E0D4BC] rounded-lg px-3 py-2 outline-none"
+    />
+
+    <button
+      onClick={applyCoupon}
+      className="bg-[#3D2C2E] text-white px-3 rounded-lg hover:bg-[#C9A66B]"
+    >
+      Apply
+    </button>
+  </div>
+
+  {couponMessage && (
+  <p
+    className={`mt-2 text-sm ${
+  couponMessage.toLowerCase().includes("selected")
+    ? "text-green-600"
+    : "text-red-500"
+}`}
+  >
+    {couponMessage}
+  </p>
+)}
+</div>
+
+{/* Price Summary */}
+<div className="border-t border-[#F0E6D2] mt-6 pt-6 space-y-3">
+  <div className="flex justify-between text-gray-600">
+    <span>Subtotal</span>
+    <span>₹{subtotal.toLocaleString()}</span>
+  </div>
+
+  
+
+  <div className="flex justify-between text-gray-600">
+    <span className="flex items-center gap-1">
+      <FiTruck size={14} /> Shipping
+    </span>
+    <span className="text-[#B8956A] font-semibold">Free</span>
+  </div>
+ {calculatedDiscount > 0 && (
+  <div className="flex justify-between text-green-600 font-semibold">
+    <span>Coupon Discount</span>
+    <span>-₹{calculatedDiscount.toLocaleString()}</span>
+  </div>
+)}
+
+  <div className="flex justify-between text-lg font-bold text-[#3D2C2E] pt-3 border-t border-[#F0E6D2]">
+    <span>Total</span>
+  <span>₹{total.toLocaleString()}</span>
+  </div>
+</div>
               </div>
+              
             )}
 
           </div>

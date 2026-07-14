@@ -1,21 +1,99 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useCart } from "../context/CartContext";
 import { useWishlist } from "../context/WishlistContext";
-import { allProducts } from "../data/products";
+import { useEffect, useLayoutEffect, useState } from "react";
+import api from "../api/axios";
 
 export default function ProductDetails() {
-  const { id } = useParams();
+
+
+const { id } = useParams();
+
+useLayoutEffect(() => {
+  window.scrollTo(0, 0);
+}, [id]);
+
+const [product, setProduct] = useState(null);
+
+useEffect(() => {
+  api
+    .get(`/products/${id}`)
+    .then((response) => {
+      const p = response.data;
+
+      setProduct({
+        id: p.id,
+        name: p.productName,
+        image: `http://localhost:8080${p.imageUrl}`,
+        price: p.price,
+        rating: p.rating,
+        stock: p.stock,
+        category: p.category,
+        description: p.description,
+      });
+    })
+    .catch((err) => console.log(err));
+}, [id]);
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { addToWishlist } = useWishlist();
-
-  const product = allProducts.find((p) => p.id === Number(id));
-
   const [size, setSize] = useState("M");
   const [qty, setQty] = useState(1);
+  const handleCheckout = async () => {
+
+  try {
+
+    // First verify backend cart has items
+    const cartResponse = await api.get("/cart");
+
+    console.log("Backend Cart:", cartResponse.data);
+
+
+    if (
+      !cartResponse.data.cartItems ||
+      cartResponse.data.cartItems.length === 0
+    ) {
+      alert("Cart is empty");
+      return;
+    }
+
+
+    const response = await api.post("/checkout", checkoutData);
+
+
+    console.log("Order Success:", response.data);
+
+
+  } catch(error) {
+
+    console.log(
+      error.response?.data || error.message
+    );
+
+  }
+
+};
+  const handleBuyNow = async () => {
+  try {
+
+    await api.post("/cart/add", {
+      productId: product.id,
+      quantity: qty
+    });
+
+    navigate("/checkout");
+
+  } catch (error) {
+
+    console.log(
+      "Buy Now failed:",
+      error.response?.data || error.message
+    );
+
+  }
+};
 
   if (!product) {
     return (
@@ -71,7 +149,7 @@ export default function ProductDetails() {
 
               <div className="flex items-center gap-4 mt-6">
                 <h2 className="text-4xl font-bold text-[#B8956A]">
-                  {product.price}
+                  ₹{product.price}
                 </h2>
 
                 <span className="line-through text-gray-400 text-xl">
@@ -139,11 +217,16 @@ export default function ProductDetails() {
               <div className="grid md:grid-cols-3 gap-4 mt-12">
 
                 <button
-                  onClick={() => addToCart({ ...product, quantity: qty, size })}
-                  className="bg-[#3D2C2E] text-white py-4 rounded-xl hover:bg-[#C9A66B] transition font-semibold"
-                >
-                  🛒 Add To Cart
-                </button>
+  onClick={() =>
+    addToCart({
+      id: product.id,
+      quantity: qty,
+    })
+  }
+  className="bg-[#3D2C2E] text-white py-4 rounded-xl hover:bg-[#C9A66B] transition font-semibold"
+>
+  🛒 Add To Cart
+</button>
 
                 <button
                   onClick={() => addToWishlist(product)}
@@ -152,10 +235,25 @@ export default function ProductDetails() {
                   ❤ Wishlist
                 </button>
 
-                <button
-  onClick={() =>
-    navigate("/checkout", { state: { product: { ...product, quantity: qty, size } } })
-  }
+       <button
+  onClick={async () => {
+    try {
+
+      await api.post("/cart/add", {
+        productId: product.id,
+        quantity: qty,
+      });
+
+      navigate("/checkout");
+
+    } catch (error) {
+      console.log(
+        error.response?.data || error.message
+      );
+
+      alert("Unable to proceed to checkout");
+    }
+  }}
   className="bg-[#8B6F63] text-white py-4 rounded-xl hover:bg-[#6E574C] transition font-semibold"
 >
   Buy Now

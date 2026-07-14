@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useWishlist } from "../context/WishlistContext";
@@ -7,17 +6,41 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import LoginRequiredModal from "../components/LoginRequiredModal";
 import { FaHeart } from "react-icons/fa";
-import { allProducts } from "../data/products";
+import { useState, useEffect } from "react";
+import api from "../api/axios";
 import ProductCard from "../components/ProductCard";
-const womenProducts = allProducts.filter(
-  (product) => product.category === "Women"
-);
+
 
 export default function Women() {
   const { user } = useAuth();
+  const [womenProducts, setWomenProducts] = useState([]);
 const [showLoginModal, setShowLoginModal] = useState(false);
 const { addToWishlist } = useWishlist();
 const { addToCart } = useCart();
+
+useEffect(() => {
+  api
+    .get("/women?page=0&size=100")
+    .then((response) => {
+      console.log(response.data);
+
+      const products = response.data.content.map((p) => ({
+        id: p.id,
+        name: p.productName,
+        image: `http://localhost:8080${p.imageUrl}`,
+        price: p.price,
+        rating: p.rating,
+        stock: p.stock,
+        category: p.category,
+        description: p.description,
+      }));
+
+      setWomenProducts(products);
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+}, []);
   return (
     <div className="bg-gradient-to-r from-[#F5F0E8] via-[#E8DCC8] to-[#D4C4A0] min-h-screen">
       <Navbar />
@@ -27,7 +50,7 @@ const { addToCart } = useCart();
         className="h-[70vh] bg-cover bg-center relative"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=2000')",
+            "url('https://images.openai.com/static-rsc-4/F2ZMC8J9bCRM1apuTRWsmhE_zTbYzCa965x-3zurzPL3ffOSJ_Fz9Uilo_hJAdj-So_A_bsxAyo3Ca0OhRwxPepG7gFEPrdMhPvUGrmy3BxiIZto0RuGkRqKdWaGwrGhfx4h7Z_JHxz3qFjpHO1YZ7u0RrbUNBEoqJFB2jypz-jXd_wyMNDI_sSTdTKj72ET?purpose=fullsize')",
         }}
       >
         <div className="absolute inset-0 bg-black/50"></div>

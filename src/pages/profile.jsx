@@ -3,7 +3,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { FiEdit2, FiPackage, FiHeart, FiMapPin, FiLogOut, FiCamera, FiTrash2, FiX } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
-
+import api from "../api/axios";
 export default function Profile() {
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState("orders");
@@ -17,9 +17,7 @@ export default function Profile() {
   });
 
   // ---- Orders ----
-  const [orders] = useState(() => {
-    return JSON.parse(localStorage.getItem("orders")) || [];
-  });
+  const [orders, setOrders] = useState([]);
 
   // ---- Addresses (persisted) ----
   const [addresses, setAddresses] = useState(() => {
@@ -38,6 +36,30 @@ export default function Profile() {
     pincode: "",
     phone: "",
   });
+  useEffect(() => {
+
+  const fetchOrders = async () => {
+
+    try {
+
+      const response = await api.get("/orders?page=0&size=10");
+
+      console.log("Orders:", response.data);
+
+      setOrders(response.data.content);
+
+    } catch (error) {
+
+      console.log("Failed to fetch orders:", error);
+
+    }
+
+  };
+
+
+  fetchOrders();
+
+}, []);
 
   const handleAddressChange = (e) => {
     setNewAddress({ ...newAddress, [e.target.name]: e.target.value });
@@ -317,29 +339,36 @@ export default function Profile() {
               ) : (
                 <div className="space-y-4">
                   {orders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="flex flex-col md:flex-row md:items-center justify-between border border-[#F0E6D2] rounded-2xl p-5 hover:shadow-md transition"
-                    >
-                      <div>
-                        <p className="font-semibold text-[#3D2C2E]">{order.item}</p>
-                        <p className="text-gray-500 text-sm">Order #{order.id}</p>
-                      </div>
+  <div
+    key={order.orderId || order.orderNumber}
+    className="flex flex-col md:flex-row md:items-center justify-between border border-[#F0E6D2] rounded-2xl p-5 hover:shadow-md transition"
+  >
 
-                      <div className="flex items-center gap-6 mt-3 md:mt-0">
-                        <span className="text-[#B8956A] font-bold">{order.price}</span>
-                        <span
-                          className={`text-sm font-semibold px-4 py-1.5 rounded-full ${
-                            order.status === "Delivered"
-                              ? "bg-[#E8DCC8] text-[#3D2C2E]"
-                              : "bg-[#F0E6D2] text-[#B8956A]"
-                          }`}
-                        >
-                          {order.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+    <div>
+      <p className="font-semibold text-[#3D2C2E]">
+        Order {order.orderNumber}
+      </p>
+
+      <p className="text-gray-500 text-sm">
+        Order ID #{order.orderId}
+      </p>
+    </div>
+
+
+    <div className="flex items-center gap-6 mt-3 md:mt-0">
+
+      <span className="text-[#B8956A] font-bold">
+        ₹{order.finalAmount}
+      </span>
+
+      <span className="text-sm font-semibold px-4 py-1.5 rounded-full bg-[#F0E6D2] text-[#B8956A]">
+        {order.orderStatus}
+      </span>
+
+    </div>
+
+  </div>
+))}
                 </div>
               )}
             </div>

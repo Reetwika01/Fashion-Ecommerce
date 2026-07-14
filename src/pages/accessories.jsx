@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FaHeart } from "react-icons/fa";
 import Navbar from "../components/Navbar";
@@ -7,18 +6,40 @@ import LoginRequiredModal from "../components/LoginRequiredModal";
 import { useWishlist } from "../context/WishlistContext";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { allProducts } from "../data/products";
+import { useState, useEffect } from "react";
+import api from "../api/axios";
 import ProductCard from "../components/ProductCard";
-const accessoriesProducts = allProducts.filter(
-  (product) => product.category === "Accessories"
-);
 
 export default function Accessories() {
   const { user } = useAuth();
 const [showLoginModal, setShowLoginModal] = useState(false);
-
+const [accessoriesProducts, setAccessoriesProducts] = useState([]);
 const { wishlist, addToWishlist } = useWishlist();
 const { addToCart } = useCart();
+
+useEffect(() => {
+  api
+    .get("/accessories?page=0&size=20")
+    .then((response) => {
+      console.log(response.data);
+
+      const products = response.data.content.map((p) => ({
+        id: p.id,
+        name: p.productName,
+        image: `http://localhost:8080${p.imageUrl}`,
+        price: p.price,
+        rating: p.rating,
+        stock: p.stock,
+        category: p.category,
+        description: p.description,
+      }));
+
+      setAccessoriesProducts(products);
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+}, []);
   return (
     <div className="bg-gradient-to-r from-[#F5F0E8] via-[#E8DCC8] to-[#D4C4A0] min-h-screen">
       <Navbar />

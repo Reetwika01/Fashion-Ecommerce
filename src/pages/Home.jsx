@@ -1,3 +1,4 @@
+import api from "../api/axios";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Newsletter from "../components/newsletter";
@@ -345,33 +346,7 @@ to-[#E7C9A5]">
         </div>
       </section>
 
-      {/* PRODUCTS */}
-<section className=" py-10  bg-[#F0E6D2]">
-  <div className="max-w-7xl mx-auto px-6">
-  <div className="flex justify-between items-center mb-12">
-    <h2 className="text-4xl font-bold text-[#3D2C2E]">
-      New Arrivals
-    </h2>
-
-    <button className="border border-[#C9A66B] text-[#B8956A] px-6 py-2 rounded-full hover:bg-[#C9A66B] hover:text-white transition">
-      View All
-    </button>
-  </div>
-
-  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-  {homeProducts.map((product) => (
-    <ProductCard
-      key={product.id}
-      product={product}
-      user={user}
-      addToWishlist={addToWishlist}
-      addToCart={addToCart}
-      setShowLoginModal={setShowLoginModal}
-    />
-  ))}
-</div>
-  </div>
-</section>
+      
       {/* SALE BANNER */}
       <section className="bg-black text-white py-24">
         <div className="max-w-6xl mx-auto text-center px-6">

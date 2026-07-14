@@ -13,13 +13,16 @@ export default function ProductCard({
       to={`/product/${product.id}`}
       className="group bg-[#FDFBF7] rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition duration-500 border border-[#F0E6D2]"
     >
+      
       {/* Image */}
       <div className="relative overflow-hidden">
         <img
-          src={product.image}
-          alt={product.name}
-          className="h-72 w-full object-cover group-hover:scale-110 transition duration-700"
-        />
+  src={product.image}
+  alt={product.name}
+  loading="lazy"
+  decoding="async"
+  className="h-72 w-full object-cover"
+/>
 
         {/* Wishlist */}
         <button
@@ -70,7 +73,7 @@ export default function ProductCard({
         <div className="flex items-center justify-between mt-2">
           <div>
             <span className="text-xl font-bold text-[#3D2C2E]">
-              {product.price}
+              ₹{product.price}
             </span>
 
             <span className="text-gray-400 line-through text-sm ml-2">

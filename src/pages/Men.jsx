@@ -1,24 +1,53 @@
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "../api/axios";
 import { FaHeart } from "react-icons/fa";
 import { useWishlist } from "../context/WishlistContext";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import LoginRequiredModal from "../components/LoginRequiredModal";
-import { allProducts } from "../data/products";
 import ProductCard from "../components/ProductCard";
-
-const menProducts = allProducts.filter(
-  (product) => product.category === "Men"
-);
+import adidasTrackpant from "../assets/adidas-trackpant.jpg";
 
 export default function Men() {
   const { user } = useAuth();
-const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [menProducts, setMenProducts] = useState([]);
+
   const { addToWishlist } = useWishlist();
-const { addToCart } = useCart();
+  const { addToCart } = useCart();
+
+  useEffect(() => {
+  api
+    .get("/products?page=0&size=20")
+    .then((response) => {
+      console.log("Response:", response.data);
+
+      const products = response.data.content
+        .filter((p) => p.category === "Men's Wear")
+        .map((p) => ({
+          id: p.id,
+          name: p.productName,
+          image: `http://localhost:8080${p.imageUrl}`,
+          price: p.price,
+          rating: p.rating,
+          stock: p.stock,
+          category: p.category,
+          description: p.description,
+        }));
+
+      console.log("Filtered Products:", products);
+
+      setMenProducts(products);
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+}, []);
+  
   return (
     <div className="bg-gradient-to-r from-[#F5F0E8] via-[#E8DCC8] to-[#D4C4A0] min-h-screen">
       <Navbar />
@@ -28,7 +57,7 @@ const { addToCart } = useCart();
         className="h-[70vh] bg-cover bg-center relative"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=2000')",
+            "url('https://images.openai.com/static-rsc-4/CkOFru6YOi3g3pxAgvS2LNeswC2-BSsgo0vlGqkgIkOrQlC_hhu2TE5qdrKIMktzbvtnROi8KIEBHIhrR-U8kJMAEajap0Q4SDFEMKnj2nj8PGFTnt--j4i3vLtNSf1RjYRYSjocUN_Y9uhkWFxdGHd3Oox3dPwh2YVIAl2_jEI?purpose=inline')",
         }}
       >
         <div className="absolute inset-0 bg-black/50" />
