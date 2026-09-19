@@ -20,7 +20,7 @@ const { addToCart } = useCart();
 
 useEffect(() => {
   api
-.get("/api/women?page=0&size=100")
+.get("/api/women?page=0&size=12")
     .then((response) => {
       console.log(response.data);
 

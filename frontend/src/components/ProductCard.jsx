@@ -1,6 +1,13 @@
+
 import { Link } from "react-router-dom";
 import { FaHeart } from "react-icons/fa";
-import {FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
+import {
+  FaStar,
+  FaStarHalfAlt,
+  FaRegStar,
+} from "react-icons/fa";
+import { useState } from "react";
+
 export default function ProductCard({
   product,
   user,
@@ -8,21 +15,30 @@ export default function ProductCard({
   addToCart,
   setShowLoginModal,
 }) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   return (
     <Link
       to={`/product/${product.id}`}
       className="group bg-[#FDFBF7] rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition duration-500 border border-[#F0E6D2]"
     >
-      
       {/* Image */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden h-72 bg-[#E8DCC8]">
+        {!imageLoaded && (
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-[#E8DCC8] via-[#F5F0E8] to-[#E8DCC8]" />
+        )}
+
         <img
-  src={product.image}
-  alt={product.name}
-  loading="lazy"
-  decoding="async"
-  className="h-72 w-full object-cover"
-/>
+          src={product.image}
+          alt={product.name}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageLoaded(true)}
+          className={`h-72 w-full object-cover transition-opacity duration-300 ${
+            imageLoaded ? "opacity-100" : "opacity-0"
+          }`}
+        />
 
         {/* Wishlist */}
         <button
@@ -54,20 +70,35 @@ export default function ProductCard({
 
         {/* Rating */}
         <div className="flex items-center mt-2">
-  {[1, 2, 3, 4, 5].map((star) => {
-    if (product.rating >= star) {
-      return <FaStar key={star} className="text-[#C9A66B]" />;
-    } else if (product.rating >= star - 0.5) {
-      return <FaStarHalfAlt key={star} className="text-[#C9A66B]" />;
-    } else {
-      return <FaRegStar key={star} className="text-[#C9A66B]" />;
-    }
-  })}
+          {[1, 2, 3, 4, 5].map((star) => {
+            if (product.rating >= star) {
+              return (
+                <FaStar
+                  key={star}
+                  className="text-[#C9A66B]"
+                />
+              );
+            } else if (product.rating >= star - 0.5) {
+              return (
+                <FaStarHalfAlt
+                  key={star}
+                  className="text-[#C9A66B]"
+                />
+              );
+            } else {
+              return (
+                <FaRegStar
+                  key={star}
+                  className="text-[#C9A66B]"
+                />
+              );
+            }
+          })}
 
-  <span className="text-gray-500 text-sm ml-2">
-    {product.rating}
-  </span>
-</div>
+          <span className="text-gray-500 text-sm ml-2">
+            {product.rating}
+          </span>
+        </div>
 
         {/* Price */}
         <div className="flex items-center justify-between mt-2">

@@ -22,7 +22,7 @@ export default function Men() {
 
   useEffect(() => {
   api
-.get("/api/products?page=0&size=20")
+.get("/api/products?page=0&size=12")
     .then((response) => {
       console.log("Response:", response.data);
 
