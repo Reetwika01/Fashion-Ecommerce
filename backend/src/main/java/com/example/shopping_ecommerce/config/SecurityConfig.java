@@ -1,7 +1,7 @@
 package com.example.shopping_ecommerce.config;
 
-import com.example.shopping_ecommerce.security.CustomUserDetailsService;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -16,7 +16,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import com.example.shopping_ecommerce.security.CustomUserDetailsService;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
@@ -109,8 +111,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173"
-        ));
+    "http://localhost:5173",
+    "https://fashion-ecommerce-1-g3ck.onrender.com"
+));
 
         configuration.setAllowedMethods(List.of(
                 "GET",
