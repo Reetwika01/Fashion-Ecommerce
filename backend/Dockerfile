@@ -7,6 +7,6 @@ COPY . .
 RUN chmod +x gradlew
 RUN ./gradlew build -x test
 
-EXPOSE 8080
+EXPOSE 10000
 
-CMD ["./gradlew", "bootRun"]
+CMD ["sh", "-c", "java -jar build/libs/*.jar --server.port=${PORT:-10000}"]
