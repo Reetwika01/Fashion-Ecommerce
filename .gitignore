@@ -1,4 +1,7 @@
-# Logs
+@'
+# =========================
+# Frontend / Node
+# =========================
 logs
 *.log
 npm-debug.log*
@@ -7,18 +10,63 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+node_modules/
+dist/
+dist-ssr/
 *.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# =========================
+# Backend / Gradle
+# =========================
+HELP.md
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.iws
+*.iml
+*.ipr
+out/
+
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+.apt_generated
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+.env.*
+application-local.properties
+application-prod.properties
+src/main/resources/application.properties
+
+# Local logs
+log.txt
+'@ | Set-Content .gitignore
