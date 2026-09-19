@@ -1,7 +1,7 @@
 import api from "../api/axios";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import Newsletter from "../components/newsletter";
+import Newsletter from "../components/Newsletter";
 import { Link } from "react-router-dom";
 import hero1 from "../assets/hero1.jpeg";
 import hero2 from "../assets/hero2.jpeg";
