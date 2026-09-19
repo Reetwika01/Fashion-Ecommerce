@@ -19,14 +19,14 @@ const { addToCart } = useCart();
 
 useEffect(() => {
   api
-    .get("/accessories?page=0&size=20")
+.get("/api/accessories?page=0&size=20")
     .then((response) => {
       console.log(response.data);
 
       const products = response.data.content.map((p) => ({
         id: p.id,
         name: p.productName,
-        image: `http://localhost:8080${p.imageUrl}`,
+image: `https://fashion-ecommerce-dnv8.onrender.com${p.imageUrl}`,
         price: p.price,
         rating: p.rating,
         stock: p.stock,
