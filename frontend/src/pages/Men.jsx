@@ -22,7 +22,7 @@ export default function Men() {
 
   useEffect(() => {
   api
-    .get("/products?page=0&size=20")
+.get("/api/products?page=0&size=20")
     .then((response) => {
       console.log("Response:", response.data);
 
@@ -31,7 +31,7 @@ export default function Men() {
         .map((p) => ({
           id: p.id,
           name: p.productName,
-          image: `http://localhost:8080${p.imageUrl}`,
+image: `https://fashion-ecommerce-dnv8.onrender.com${p.imageUrl}`,
           price: p.price,
           rating: p.rating,
           stock: p.stock,
